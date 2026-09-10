@@ -1,0 +1,16 @@
+{
+  "name": "selma-bordados-integrado",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm ci --prefix selma-operacional && corepack pnpm --dir comercial-deskcomm install --frozen-lockfile",
+    "dev": "concurrently -n OPERACIONAL,COMERCIAL -c green,blue \"npm run dev:operacional\" \"npm run dev:comercial\"",
+    "dev:operacional": "npm --prefix selma-operacional run dev -- --hostname 127.0.0.1 -p 3100",
+    "dev:comercial": "corepack pnpm --dir comercial-deskcomm dev -- --hostname 127.0.0.1 -p 3200",
+    "check:operacional": "npm --prefix selma-operacional run lint",
+    "check:comercial": "corepack pnpm --dir comercial-deskcomm typecheck && corepack pnpm --dir comercial-deskcomm lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

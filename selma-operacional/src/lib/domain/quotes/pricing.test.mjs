@@ -1,0 +1,12 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { calculateQuotePricing, gradeMatchesQuantity, isQuoteExpired, requiresCommercialApproval } from './pricing.ts'
+
+test('calcula subtotal, desconto, total, custo, lucro, margem e markup',()=>{assert.deepEqual(calculateQuotePricing({items:[{quantity:10,unitPrice:100,unitCost:60}],discountAmount:100,freightAmount:50,additionalAmount:25}),{subtotal:1000,discountAmount:100,discountPercent:10,freightAmount:50,additionalAmount:25,totalAmount:975,estimatedCost:600,estimatedProfit:375,marginPercent:38.46,markup:1.63})})
+test('aplica desconto por item antes do desconto geral',()=>{assert.deepEqual(calculateQuotePricing({items:[{quantity:2,unitPrice:100,unitCost:40,discountAmount:20}],discountAmount:10}),{subtotal:180,discountAmount:10,discountPercent:5.56,freightAmount:0,additionalAmount:0,totalAmount:170,estimatedCost:80,estimatedProfit:90,marginPercent:52.94,markup:2.13})})
+test('soma frete e adicionais ao total sem alterar o custo estimado',()=>{const result=calculateQuotePricing({items:[{quantity:1,unitPrice:100,unitCost:70}],freightAmount:15,additionalAmount:5});assert.equal(result.totalAmount,120);assert.equal(result.estimatedCost,70);assert.equal(result.estimatedProfit,50)})
+test('limita o desconto geral ao subtotal',()=>{const result=calculateQuotePricing({items:[{quantity:1,unitPrice:50,unitCost:0}],discountAmount:80});assert.equal(result.discountAmount,50);assert.equal(result.totalAmount,0);assert.equal(result.marginPercent,0)})
+test('trata custo e subtotal zero sem divisão inválida',()=>{assert.deepEqual(calculateQuotePricing({items:[]}),{subtotal:0,discountAmount:0,discountPercent:0,freightAmount:0,additionalAmount:0,totalAmount:0,estimatedCost:0,estimatedProfit:0,marginPercent:0,markup:null})})
+test('valida soma da grade',()=>{assert.equal(gradeMatchesQuantity(15,[{quantity:5},{quantity:10}]),true);assert.equal(gradeMatchesQuantity(14,[{quantity:5},{quantity:10}]),false);assert.equal(gradeMatchesQuantity(1,[]),true)})
+test('aplica limite de desconto e margem mínima',()=>{assert.equal(requiresCommercialApproval(6,5,30,25),true);assert.equal(requiresCommercialApproval(4,5,20,25),true);assert.equal(requiresCommercialApproval(4,5,30,25),false)})
+test('validade usa data comercial',()=>{assert.equal(isQuoteExpired('2026-09-07','2026-09-08'),true);assert.equal(isQuoteExpired('2026-09-08','2026-09-08'),false)})

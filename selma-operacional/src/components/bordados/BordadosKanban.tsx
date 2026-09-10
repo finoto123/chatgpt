@@ -1,0 +1,94 @@
+'use client'
+import { useTransition } from 'react'
+import { toast } from 'sonner'
+import { updateBordadoStatusAction } from '@/app/bordados/actions'
+import { Pedido } from '@/types'
+import { usePermission } from '@/components/providers/AuthorizationProvider'
+import { todayBusinessDate } from '@/lib/business-date'
+
+const COLUNAS = [
+  { id: 'aguardando_matriz', label: 'Aguardando Matriz', cor: 'text-amber-700 dark:text-amber-400', borda: 'border-amber-200 dark:border-amber-900/30', bg: 'bg-amber-500/5 dark:bg-amber-950/10' },
+  { id: 'para_bordar',       label: 'Para Bordar',       cor: 'text-blue-700 dark:text-blue-400',   borda: 'border-blue-200 dark:border-blue-900/30',   bg: 'bg-blue-500/5 dark:bg-blue-950/10' },
+  { id: 'finalizado',        label: 'Finalizado',        cor: 'text-green-700 dark:text-green-400',  borda: 'border-green-200 dark:border-green-900/30',  bg: 'bg-green-500/5 dark:bg-green-950/10' },
+]
+
+const PROXIMA: Record<string, string> = {
+  aguardando_matriz: 'para_bordar',
+  para_bordar:       'finalizado',
+}
+
+const LABEL_BOTAO: Record<string, string> = {
+  aguardando_matriz: 'Matriz Pronta → Para Bordar',
+  para_bordar:       'Finalizar Bordado',
+}
+
+export function BordadosKanban({ aguardandoMatriz, paraBordar, finalizado }: {
+  aguardandoMatriz: Pedido[]
+  paraBordar:       Pedido[]
+  finalizado:       Pedido[]
+}) {
+  const canUpdate = usePermission('production.update')
+  const [isPending, startTransition] = useTransition()
+
+  const moverPedido = (pedidoId: string, statusAtual: string) => {
+    const proximo = PROXIMA[statusAtual]
+    if (!proximo) return
+    startTransition(async () => {
+      const result = await updateBordadoStatusAction(pedidoId, proximo)
+      if (result?.error) toast.error('Erro ao mover pedido')
+      else toast.success('Pedido atualizado!')
+    })
+  }
+
+  const grupos = [aguardandoMatriz, paraBordar, finalizado]
+  const hoje = todayBusinessDate()
+
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      {COLUNAS.map((col, idx) => (
+        <div key={col.id} className={`rounded-xl border ${col.borda} ${col.bg} p-4 min-h-[300px]`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`text-sm font-semibold ${col.cor}`}>{col.label}</h3>
+            <span className="text-xs bg-surface border border-border text-muted px-2 py-0.5 rounded-full font-medium">
+              {grupos[idx].length}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {grupos[idx].length === 0 && (
+              <p className="text-xs text-gray-600 text-center py-8">Nenhum pedido</p>
+            )}
+            {grupos[idx].map((pedido: Pedido) => {
+              const atrasado = pedido.entrega_programado && pedido.entrega_programado < hoje
+              const totalPecas = pedido.itens?.reduce((s, i) => s + i.qtde, 0) ?? 0
+              return (
+                <div key={pedido.id}
+                  className="bg-card border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">#{pedido.numero}</p>
+                      <p className="text-xs text-muted truncate max-w-[150px]">{pedido.cliente}</p>
+                    </div>
+                    <span className={`text-xs font-medium flex-shrink-0 ${atrasado ? 'text-red-600 dark:text-red-400' : 'text-muted'}`}>
+                      {pedido.entrega_programado ? new Date(pedido.entrega_programado + 'T12:00:00').toLocaleDateString('pt-BR') : '--'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted">{totalPecas} peça{totalPecas !== 1 ? 's' : ''}</p>
+                  {canUpdate && PROXIMA[col.id] && (
+                    <button
+                      onClick={() => moverPedido(pedido.id!, col.id)}
+                      disabled={isPending}
+                      className="w-full text-xs py-1.5 px-2 bg-input border border-border text-foreground rounded hover:border-green-600 dark:hover:border-green-500 hover:text-green-700 dark:hover:text-green-400 transition-all disabled:opacity-50"
+                    >
+                      {LABEL_BOTAO[col.id]} →
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}

@@ -1,0 +1,8 @@
+import { notFound } from 'next/navigation'
+import { PublicProposal } from '@/components/quotes/PublicProposal'
+import { enforceRateLimit } from '@/lib/security/rate-limit'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { getPublicProposal } from '@/lib/supabase/queries/quotes'
+export const dynamic='force-dynamic'
+export default async function ProposalPage({params}:{params:Promise<{token:string}>}){const {token}=await params;if(!/^[a-f0-9]{64}$/i.test(token))notFound();const limit=await enforceRateLimit({scope:'proposal-view',identifier:token,limit:60,windowSeconds:3600});if(!limit.allowed)return <Message text="Muitas visualizações em sequência. Tente novamente mais tarde."/>;const proposal=await getPublicProposal(token);if(!proposal)notFound();if((proposal as unknown as {unavailable?:boolean;reason?:string}).unavailable)return <Message text={(proposal as unknown as {reason?:string}).reason==='newer_version'?'Existe uma versão mais recente desta proposta.':'Esta proposta expirou ou não está mais disponível.'}/>;const supabase=await createServerSupabaseClient();await supabase.rpc('record_proposal_view',{p_token:token});return <PublicProposal proposal={proposal} token={token}/>}
+function Message({text}:{text:string}){return <main className="flex min-h-screen items-center justify-center bg-[#f4f5f2] p-6 text-zinc-900"><div className="max-w-md rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm"><p className="font-semibold tracking-wider text-green-600">SELMA BORDADOS</p><h1 className="mt-3 text-xl font-bold">Proposta indisponível</h1><p className="mt-2 text-zinc-500">{text}</p></div></main>}

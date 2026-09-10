@@ -1,0 +1,5 @@
+import type { QuoteStatus } from '@/types/quotes'
+import { cn } from '@/lib/utils'
+const labels:Record<QuoteStatus,string>={draft:'Rascunho',ready:'Pronto',sent:'Enviado',viewed:'Visualizado',change_requested:'Alteração solicitada',approved:'Aprovado',rejected:'Recusado',expired:'Expirado',converted:'Convertido',archived:'Arquivado'}
+const tones:Record<QuoteStatus,string>={draft:'bg-surface-hover text-muted',ready:'bg-amber-500/10 text-amber-700 dark:text-amber-400',sent:'bg-blue-500/10 text-blue-600 dark:text-blue-400',viewed:'bg-violet-500/10 text-violet-600 dark:text-violet-400',change_requested:'bg-orange-500/10 text-orange-700 dark:text-orange-400',approved:'bg-green-500/10 text-green-600 dark:text-green-400',rejected:'bg-rose-500/10 text-rose-600 dark:text-rose-400',expired:'bg-rose-500/10 text-rose-600 dark:text-rose-400',converted:'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',archived:'bg-surface-hover text-muted'}
+export function QuoteStatusBadge({status}:{status:QuoteStatus}){return <span className={cn('inline-flex rounded-full px-2.5 py-1 text-xs font-medium',tones[status])}>{labels[status]}</span>}

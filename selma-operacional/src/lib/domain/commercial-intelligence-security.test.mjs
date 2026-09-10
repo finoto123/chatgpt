@@ -1,0 +1,8 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+const sql=readFileSync(new URL('../../../supabase/migrations/202609080002_commercial_intelligence.sql',import.meta.url),'utf8')
+test('habilita RLS nas oito tabelas e não concede dados ao anon',()=>{for(const table of ['commercial_settings','scoring_rules','automation_rules','automation_runs','opportunity_stage_history','sales_targets','saved_views','notifications'])assert.ok(sql.includes(`'${table}'`),table);assert.match(sql,/ALTER TABLE public\.%I ENABLE ROW LEVEL SECURITY/);assert.match(sql,/REVOKE ALL ON public\.%I FROM PUBLIC,anon,authenticated/);assert.doesNotMatch(sql,/GRANT (?:SELECT|INSERT|UPDATE|DELETE)[^;]+ TO anon/i)})
+test('protege comandos e jobs por permissão',()=>{assert.match(sql,/run_commercial_daily_check_now[\s\S]+has_permission\('settings\.manage'\)[\s\S]+has_permission\('crm\.delete'\)/);assert.match(sql,/win_opportunity[\s\S]+has_permission\('crm\.update'\)/);assert.match(sql,/create_reactivation_tasks[\s\S]+has_permission\('crm\.create'\)/)})
+test('automação é idempotente e não contém canais de envio',()=>{assert.match(sql,/automation_runs[\s\S]+idempotency_key text NOT NULL UNIQUE/);assert.match(sql,/ON CONFLICT\(idempotency_key\) DO NOTHING/);assert.doesNotMatch(sql,/(send_whatsapp|send_email|twilio|resend)/i)})
+test('score, histórico, forecast e auditoria são persistidos',()=>{for(const token of ['score_breakdown','opportunity_stage_history','get_sales_forecast','commercial_intelligence_audit','crm_add_business_days'])assert.ok(sql.includes(token),token)})
