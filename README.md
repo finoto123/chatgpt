@@ -1,38 +1,56 @@
-# Selma Bordados integrado
+# Selma Bordados — Comercial + Operacional
 
-Este repositório reúne o sistema operacional da Selma Bordados e o módulo
-comercial baseado no DeskcommCRM.
+Aplicação unificada de gestão comercial e operacional da Selma Bordados.
+CRM, Inbox comercial, pedidos, produção, estoque, compras e financeiro são
+entregues pelo mesmo projeto Next.js, com um único login e uma única sessão.
 
-## Estrutura
+## Requisitos
 
-- `selma-operacional`: dashboard, pedidos, produção, estoque, compras,
-  financeiro, cadastros e administração.
-- `comercial-deskcomm`: atendimento, Inbox, Radar, Agenda, CRM, agentes de IA,
-  canais, análise e configurações comerciais.
+- Node.js 22
+- npm
+- projeto Supabase configurado
 
-Em desenvolvimento, o Selma roda em `http://127.0.0.1:3100` e encaminha a zona
-`/comercial` para o Deskcomm em `http://127.0.0.1:3200/comercial`.
+## Configuração local
 
-## Instalação
+1. Copie `.env.example` para `.env.local`.
+2. Preencha as variáveis do seu ambiente Supabase.
+3. Instale as dependências:
 
-1. Copie os dois arquivos `.env.example` para `.env.local` dentro de cada
-   aplicação e preencha as configurações do Supabase.
-2. Na raiz, execute `npm install`.
-3. Execute `npm run install:all`.
-4. Execute `npm run dev`.
+```bash
+npm ci
+```
 
-Nenhuma credencial real é versionada neste repositório.
+4. Inicie o projeto:
 
-## Banco comercial
+```bash
+npm run dev -- --port 3001
+```
 
-O código do Deskcomm requer seu próprio conjunto de tabelas, funções, políticas
-RLS e buckets. Antes de aplicar o baseline em um banco Selma existente, faça um
-backup completo e trate as colisões conhecidas em `contacts` e
-`automation_rules`. Consulte
-`selma-operacional/docs/deskcomm-commercial-integration.md`.
+Acesse `http://localhost:3001/login`.
 
-## Licença do módulo importado
+## Validação
 
-O código comercial deriva do DeskcommCRM no commit
-`1c9a46a180835cd21bcd74a732fba085df8f3e13`. Os avisos de licença correspondentes
-estão preservados em `comercial-deskcomm/THIRD_PARTY_LICENSES`.
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+## Arquitetura
+
+- `/login`: autenticação única;
+- `/dashboard`: visão operacional;
+- `/crm`: CRM Selma;
+- `/comercial`: módulo comercial incorporado;
+- `/comercial/app/inbox`: Inbox no mesmo runtime;
+- `/pedidos`, `/producao`, `/estoque`, `/compras` e `/financeiro`: operação.
+
+O banco atualmente usado no desenvolvimento é apenas referência. Não execute
+migrations em ambiente real sem concluir o Track DB e sua homologação. Consulte
+`docs/APP-1-RUNTIME-UNICO.md` e `docs/DATABASE-DEFERRED-PLAN.md`.
+
+## Segurança
+
+Arquivos `.env*`, dependências, builds, caches e backups locais não são
+versionados. O repositório contém somente `.env.example`, sem credenciais reais.
